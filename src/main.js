@@ -60,6 +60,37 @@ class Downloader {
             a.stdout.on("end", () => {
                 try {
                     const info = JSON.parse(Buffer.concat(chunk).toString());
+                    if (info.entries?.length) {
+                        const playlist = {
+                            author: info.uploader || info.channel || "Unknown",
+                            description: info.description || "",
+                            id: info.id || "",
+                            source: info.entries[0].extractor,
+                            thumbnail: info.thumbnails ? info.thumbnails[0].url : info.thumbnail || "https://upload.wikimedia.org/wikipedia/commons/2/2a/ITunes_12.2_logo.png",
+                            title: info.fulltitle || info.title || "Attachment",
+                            tracks: [],
+                            type: 'playlist',
+                            url: url
+                        }
+                        for (let i = 0; i < info.entries.length; i++) {
+                            const track = info.entries[i];
+                            const data = {
+                                title: track.fulltitle || track.title || "Attachment",
+                                duration: (track.duration || track.duration_raw) * 1000 || 0,
+                                thumbnail: track.thumbnails ? track.thumbnails[0].url : track.thumbnail || "https://upload.wikimedia.org/wikipedia/commons/2/2a/ITunes_12.2_logo.png",
+                                views: track.view_count || 0,
+                                author: track.uploader || track.channel || "YouTubeDL Media",
+                                description: track.description || "",
+                                url: url,
+                                source: track.extractor,
+                                get engine() {
+                                    return Downloader.download(url);
+                                }
+                            };
+                            playlist.tracks.push(data);
+                        }
+                        return resolve({ playlist: playlist, info: [] });
+                    }
                     const data = {
                         title: info.fulltitle || info.title || "Attachment",
                         duration: (info.duration || info.duration_raw) * 1000 || 0,
@@ -70,7 +101,7 @@ class Downloader {
                         url: url,
                         source: info.extractor,
                         get engine() {
-                            return Downloader.download(url)
+                            return Downloader.download(url);
                         }
                     };
 
